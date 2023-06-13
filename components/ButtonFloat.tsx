@@ -1,70 +1,6 @@
-// import React, { useState, useEffect, useRef } from "react";
-// import MessageIframe from "./MessageIframe";
-
-// interface ButtonFloatProps {
-//   onClick: () => void;
-// }
-
-// const ButtonFloat: React.FC<ButtonFloatProps> = ({ onClick }) => {
-//   const buttonRef = useRef<HTMLButtonElement>(null);
-//   const [isIframeOpen, setIsIframeOpen] = useState(false);
-
-//   useEffect(() => {
-//     const handleClickOutside = (event: MouseEvent) => {
-//       if (
-//         buttonRef.current &&
-//         !buttonRef.current.contains(event.target as Node)
-//       ) {
-//         setIsIframeOpen(false);
-//       }
-//     };
-
-//     document.addEventListener("mousedown", handleClickOutside);
-
-//     return () => {
-//       document.removeEventListener("mousedown", handleClickOutside);
-//     };
-//   }, []);
-
-//   const handleButtonClick = () => {
-//     setIsIframeOpen(true);
-//     onClick();
-//   };
-
-//   return (
-//     <>
-//       <button
-//         ref={buttonRef}
-//         className="fixed bottom-4 right-4 z-50 w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-all duration-300"
-//         onClick={handleButtonClick}
-//       >
-//         <svg
-//           xmlns="http://www.w3.org/2000/svg"
-//           viewBox="0 0 24 24"
-//           fill="currentColor"
-//           className="w-6 h-6"
-//         >
-//           <path d="M0 0h24v24H0z" fill="none" />
-//           <path d="M12 6v6h6v2h-6v6h-2v-6H6v-2h6V6h2zm0-4a8 8 0 1 0 .001 16.001A8 8 0 0 0 12 2zm0 14a6 6 0 1 1 0-12 6 6 0 0 1 0 12z" />
-//         </svg>
-//       </button>
-
-//       {isIframeOpen && (
-//         <div
-//           className="absolute top-3/4 left-3/4 transform -translate-x-1/2 -translate-y-1/2 bg-white border border-gray-300 rounded-lg shadow-lg"
-//           style={{ width: "500px", height: "400px" }}
-//         >
-//           <MessageIframe isOpen={isIframeOpen} />
-//         </div>
-//       )}
-//     </>
-//   );
-// };
-
-// export default ButtonFloat;
-
 import React, { useState } from "react";
-import { MessageReceiver, MessageSender } from "./mensagem";
+import { MessageProps, MessageReceiver, MessageSender } from "./mensagem";
+import { QuestionRequest } from "@/hooks/questionRequests";
 
 interface ButtonFloatProps {
   onClick: () => void;
@@ -72,7 +8,8 @@ interface ButtonFloatProps {
 
 const ButtonFloat: React.FC<ButtonFloatProps> = ({ onClick }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Array<MessageProps>>([]);
+  const [questionValue, setQuestionValue] = useState<string>("");
 
   const handleButtonClick = () => {
     setIsModalOpen(true);
@@ -83,17 +20,54 @@ const ButtonFloat: React.FC<ButtonFloatProps> = ({ onClick }) => {
     setIsModalOpen(false);
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(event.target.value);
-  };
+  async function PostRequest(question: string) {
+    const result = await QuestionRequest(question).then((i) => {
+      return i;
+    });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const answerValue = {
+      text: result,
+      isSender: true,
+    };
+    setMessages((message: any) => [...message, answerValue]);
+    return result;
+  }
+
+  const handleSubmit = (event: React.BaseSyntheticEvent) => {
     event.preventDefault();
-    // Lógica de envio da mensagem aqui
-
-    // Limpar o campo de mensagem após o envio
-    setMessage("");
+    const questionInput = event.currentTarget.elements.namedItem(
+      "question"
+    ) as HTMLTextAreaElement;
+    if (questionInput) {
+      const questionValue = { text: questionInput.value, isSender: false };
+      setMessages((message: any) => [...message, questionValue]);
+      PostRequest(questionValue.text);
+    }
+    setQuestionValue("");
   };
+
+  const handleChange = (event: any) => {
+    setQuestionValue(event.target.value);
+  };
+
+  function MessageRenderCondicional(message: MessageProps, index: number) {
+    if (message.isSender) {
+      return (
+        <MessageSender
+          key={index}
+          isSender={message.isSender}
+          text={message.text}
+        />
+      );
+    }
+    return (
+      <MessageReceiver
+        key={index}
+        isSender={message.isSender}
+        text={message.text}
+      />
+    );
+  }
 
   return (
     <>
@@ -105,7 +79,7 @@ const ButtonFloat: React.FC<ButtonFloatProps> = ({ onClick }) => {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="currentColor"
-          className="w-6 h-6"
+          className="w- h-6"
         >
           <path d="M0 0h24v24H0z" fill="none" />
           <path d="M12 6v6h6v2h-6v6h-2v-6H6v-2h6V6h2zm0-4a8 8 0 1 0 .001 16.001A8 8 0 0 0 12 2zm0 14a6 6 0 1 1 0-12 6 6 0 0 1 0 12z" />
@@ -119,31 +93,28 @@ const ButtonFloat: React.FC<ButtonFloatProps> = ({ onClick }) => {
         >
           <div
             className="overflow-y-auto fixed bottom-4 right-16 bg-gray-100 rounded-lg shadow-lg p-4 transform transition-all duration-300"
-            style={{ width: "400px", height: "400px" }}
+            style={{
+              width: "400px",
+              maxWidth: "70vw",
+              maxHeight: "70vh",
+              height: "400px",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col space-y-4">
-              <MessageSender isSender={true} text="Olá, como você está?" />
-              <MessageReceiver
-                isSender={false}
-                text="Oi! Estou bem, obrigado!"
-              />
-              <MessageSender
-                isSender={true}
-                text="Que bom! O que você tem feito?"
-              />
-              <MessageReceiver
-                isSender={false}
-                text="Tenho estudado bastante e também saí com amigos."
-              />
+              {messages?.map((message: MessageProps, index: number) =>
+                MessageRenderCondicional(message, index)
+              )}
             </div>
+
             <form onSubmit={handleSubmit} className="flex mt-16">
               <textarea
-                value={message}
-                onChange={handleChange}
+                name="question"
                 className="flex-grow  p-2 mr-2 border border-gray-300 rounded-md resize-none focus:outline-none focus:border-blue-500"
                 rows={2}
                 placeholder="Escreva sua mensagem..."
+                value={questionValue}
+                onChange={handleChange}
               ></textarea>
               <button
                 type="submit"

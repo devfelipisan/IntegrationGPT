@@ -1,6 +1,6 @@
 import React from "react";
 
-interface MessageProps {
+export interface MessageProps {
   text: string;
   isSender: boolean;
 }
