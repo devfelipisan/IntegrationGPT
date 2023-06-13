@@ -1,52 +1,50 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { Configuration, OpenAIApi } from "openai";
 
-const configuration = new Configuration({
-  organization: "org-ZZRxRk4CRLKBZunZ4U2jPTSu",
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
-
-export default async function chatGPTHandler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  //     const fetchData = async () => {
-  //         try {
-  //           const response = await fetch('https://api.example.com/data');
-  //           const jsonData = await response.json();
-  //           setData(jsonData);
-  //         } catch (error) {
-  //           console.error('Erro ao buscar os dados:', error);
-  //         }
-  //       };
+  const question = req.body;
 
-  //       var myHeaders = new Headers();
-  // myHeaders.append("Content-Type", "application/json");
-  // myHeaders.append("Authorization", "Bearer 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");
+  const fetching = async () => {
+    try {
+      const myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+      myHeaders.append("Authorization", `${process.env.OPENAI_API_KEY}`);
 
-  // var raw = JSON.stringify({
-  //   "model": "gpt-3.5-turbo",
-  //   "messages": [
-  //     {
-  //       "role": "user",
-  //       "content": "O que é você?"
-  //     }
-  //   ]
-  // });
+      const raw = JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: question,
+          },
+        ],
+      });
 
-  // var requestOptions = {
-  //   method: 'POST',
-  //   headers: myHeaders,
-  //   body: raw,
-  //   redirect: 'follow'
-  // };
+      const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow" as RequestRedirect,
+      };
 
-  // fetch("https://api.openai.com/v1/chat/completions", requestOptions)
-  //   .then(response => response.text())
-  //   .then(result => console.log(result))
-  //   .catch(error => console.log('error', error));
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        requestOptions
+      );
+      const result = JSON.parse(await response.text());
 
-  res.status(200).json("test");
+      return result.choices[0].message.content;
+    } catch (error) {
+      return res.status(500).json(error);
+    }
+  };
+
+  if (req.method === "POST") {
+    const result = await fetching();
+    return res.status(201).json(result);
+  }
+
+  res.status(200).json(" ... funcionando");
 }
