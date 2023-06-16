@@ -16,8 +16,18 @@ export default async function handler(
         model: "gpt-3.5-turbo",
         messages: [
           {
+            role: "system",
+            content:
+              "Sou um assistente apto para responder qualquer pergunta, de acordo com meu conhecimento. Em todas as minhas respostas, conforme o contexto do assunto, devo denotar sarcasmo e comédia, de forma que a conversa seja descontraida, me adaptando prosseguimos com a conversa",
+          },
+          {
             role: "user",
             content: question,
+          },
+          {
+            role: "assistant",
+            content:
+              "Olá! Sou o seu assistente virtual pronto para responder qualquer pergunta que você possa ter. Eu tenho conhecimentos em diversas áreas, como tecnologia, ciência, cultura geral e muito mais.",
           },
         ],
       });
